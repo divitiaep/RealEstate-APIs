@@ -32,7 +32,7 @@ from xml.etree.ElementTree import ET
 # # print("Longitude:%s\n"
 # #       %(longitude))
 
-URL = "http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz17r5sqd32mj_aypsc&address=2114+Bigelow+Ave&citystatezip=Seattle%2C+WA"
+URL = "http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz17r5sqd32mj_aypsc&address=2114+Bigelow+Ave&statezip=Seattle%2C+WA"
 
 response = requests.get(url = URL)
 

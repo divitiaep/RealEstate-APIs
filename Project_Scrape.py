@@ -2,42 +2,101 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.remote.command import Command
+from os import system
+import string
+import re
 
 
 def loadPageUntilID(id):
+    global browser
     try:
-        element = WebDriverWait(browser, 20).until(EC.presence_of_element_located((By.ID, id)))
+        element = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, id)))
     except:
         pass
-browser = webdriver.Safari()
+        
 
-browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
+def appSetup():
+    global browser
+    browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
+    Agree = browser.find_element_by_id("btnContinue")
+    Agree.click()
 
-# browser.maximize_window()
+def Search(house_num, st_name, st_type):
+    global browser
+    # [Uncomment] This is a new feature
+    # browser.get("http://www2.county.allegheny.pa.us/RealEstate/Search.aspx")
 
-Agree = browser.find_element_by_id("btnContinue")
-Agree.click()
+    # Remove any puncations and Uppercase the letters
+    st_name = st_name.translate(str.maketrans('', '', string.punctuation)).upper()
+    st_type = st_type.translate(str.maketrans('', '', string.punctuation)).upper()
 
-loadPageUntilID("textStreetNum")
+    # Search for Property Address
+    loadPageUntilID("textStreetNum")
 
-HouseNum = browser.find_element_by_id("txtStreetNum")
-HouseNum.send_keys("1840")
+    HouseNum = browser.find_element_by_id("txtStreetNum")
+    Street = browser.find_element_by_id("txtStreetName")
+    
+    HouseNum.send_keys(house_num)
+    Street.send_keys(st_name)
+    
+    go = browser.find_element_by_id("btnSearch")
+    go.click()
 
-Street = browser.find_element_by_id("txtStreetName")
-Street.send_keys("JANCEY")
+    # Results are returned
+    # Check for proper results
 
-go = browser.find_element_by_id("btnSearch")
-go.click()
+    # Results are good, then parse Results
+    loadPageUntilID("BasicInfo1_lblParcelID")
 
-loadPageUntilID("BasicInfo1_lblParcelID")
+    parcelId = browser.find_element_by_id("BasicInfo1_lblParcelID").text
+    owner = browser.find_element_by_id("BasicInfo1_lblOwner").text
 
-ParcelId = browser.find_element_by_id("BasicInfo1_lblParcelID")
-print("Parcel ID: " + ParcelId.text)
+    # parse the Address
+    addr = browser.find_element_by_id("BasicInfo1_lblAddress").text
+    city, state, zipcode = addrParser(st_type, addr)
+    address = house_num + " " + st_name + " " + st_type
 
-Address = browser.find_element_by_id("BasicInfo1_lblAddress")
-print("Address" + Address.text)
+    return address, city, state, zipcode, owner
 
-owner = browser.find_element_by_id("BasicInfo1_lblOwner")
-print("Owner: " + owner.text)
+# Returns City, State, and ZipCode
+def addrParser(st_type, addr):
+    parts = re.findall(r"[\w']+", addr)
 
-browser.quit()
+    if(len(parts) == 6):
+        city = parts[3]
+        state = parts[4]
+        zipcode = parts[5]
+    elif (len(parts) == 5):
+        #remove street Type from parts[2]
+        city = parts[2].replace(st_type, '')
+        state   = parts[3]
+        zipcode = parts[4]
+      
+    return city, state, zipcode
+
+# appSetup()
+
+def main():
+    global browser
+    system("ls -l")
+
+    # leads = input("\nEnter the name of your leads file: ")
+    # output = input("Name of output file: ")
+
+    browser = webdriver.Safari()
+    # file = open(leads, 'r')
+    # muni = file.read()
+    # file.close()
+
+    appSetup()
+    addr, city, state, zipcode, name = Search("6419", "Deary", "St")
+    print(name)
+    print(addr)
+    print(city + " " + state + ", " + zipcode)
+    browser.quit()
+
+
+
+if __name__ == "__main__":
+    main()
