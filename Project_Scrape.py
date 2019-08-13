@@ -3,6 +3,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
+
+def loadPageUntilID(id):
+    try:
+        element = WebDriverWait(browser, 20).until(EC.presence_of_element_located((By.ID, id)))
+    except:
+        pass
 browser = webdriver.Safari()
 
 browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
@@ -12,10 +18,8 @@ browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
 Agree = browser.find_element_by_id("btnContinue")
 Agree.click()
 
-try:
-    element = WebDriverWait(browser, 20).until(EC.presence_of_element_located((By.ID, "txtStreetNum")))
-except:
-    pass
+loadPageUntilID("textStreetNum")
+
 HouseNum = browser.find_element_by_id("txtStreetNum")
 HouseNum.send_keys("1840")
 
@@ -25,11 +29,7 @@ Street.send_keys("JANCEY")
 go = browser.find_element_by_id("btnSearch")
 go.click()
 
-try:
-    element = WebDriverWait(browser, 20).until(EC.presence_of_element_located((By.ID, "BasicInfo1_lblParcelID")))
-except:
-    pass
-
+loadPageUntilID("BasicInfo1_lblParcelID")
 
 ParcelId = browser.find_element_by_id("BasicInfo1_lblParcelID")
 print("Parcel ID: " + ParcelId.text)
