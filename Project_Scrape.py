@@ -7,7 +7,10 @@ from os import system
 import string
 import re
 import csv
-
+import os
+# num = []
+# st = []
+# tpe = []
 
 def loadPageUntilID(id):
     global browser
@@ -20,6 +23,7 @@ def loadPageUntilID(id):
 def appSetup():
     global browser
     browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
+    # loadPageUntilID("btnContinue")
     Agree = browser.find_element_by_id("btnContinue")
     Agree.click()
 
@@ -76,11 +80,57 @@ def addrParser(st_type, addr):
       
     return city, state, zipcode
 
-# appSetup()
+
+def openFile(fileName):
+    global addresses
+
+    FileName = os.path.expanduser("~/Documents/" + fileName)
+
+    with open(FileName) as f:
+        lines = [line.rstrip('\n') for line in open(FileName)]
+
+    addresses = []
+
+    for items in lines:
+        lowercase = items.lower()
+        if "north" in lowercase:
+            newStr = lowercase.replace("north", "N")
+            addresses.append(newStr)
+        elif "south" in lowercase:
+            newStr = lowercase.replace("south", "S")
+            newStr = addresses.append(newStr)
+        elif "east" in lowercase:
+            newStr = lowercase.replace("east", "E")
+            newStr = addresses.append(newStr)
+        elif "west" in lowercase:
+            newStr = lowercase.replace("west", "W")
+            newStr = addresses.append(newStr)
+        else:
+            addresses.append(items)
+
+def listItems():
+    global addresses
+    global num
+    global st
+    global tpe
+
+    num = []
+    st = []
+    tpe = []
+
+    for items in addresses:
+        num.append(items.split(" ")[0])
+        st.append(items.split(" ")[1])
+        tpe.append(items.split(" ")[2])
 
 def main():
     global browser
-    system("ls -l")
+    global addresses
+    global num
+    global st
+    global tpe
+
+    # system("ls -l")
 
     # leads = input("\nEnter the name of your leads file: ")
     # output = input("Name of output file: ")
@@ -98,10 +148,20 @@ def main():
     prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
 
     appSetup()
-    property = Search("6419", "Deary", "St")
-    prop_writer.writerow(property)
-    property = Search("1840", "Jancey", "st")
-    prop_writer.writerow(property)
+    openFile("Properties.txt")
+    listItems()
+
+    if len(num) == len(st) and len(st) == len(tpe):
+        i = 0
+        for nums in num:
+            property = Search(nums, st[i], tpe[i])
+            prop_writer.writerow(property)
+            i += 1
+
+    # property = Search("6419", "Deary", "St")
+    # prop_writer.writerow(property)
+    # property = Search("1840", "Jancey", "st")
+    # prop_writer.writerow(property)
 
 
     # Close all the files that are open
