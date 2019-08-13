@@ -1,30 +1,3 @@
-import requests
-from bs4 import BeautifulSoup
-from csv import writer
-
-# response = requests.get('https://www.swlahec.com/2016/09/06/sample-blog-post-3/')
-#
-# soup = BeautifulSoup(response.text, 'html.parser')
-#
-# # print(response.text)
-# title = soup.find(class_='entry-title')
-# date = soup.find(class_='date updated')
-# post = soup.find(class_='entry-content clearfix')
-#
-# print('Title: ')
-# print(title.get_text())
-# print('\n')
-#
-# print('Date: ')
-# print(date.contents[0].get_text())
-# print('\n')
-#
-#
-# print('Post: ')
-# print(post.get_text())
-# print('\n')
-
-
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
