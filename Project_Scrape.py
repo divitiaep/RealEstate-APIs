@@ -3,22 +3,49 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.command import Command
+from selenium.common.exceptions import TimeoutException
 from os import system
+from time import sleep
 import string
 import re
 import csv
 import os
-# num = []
-# st = []
-# tpe = []
 
-def loadPageUntilID(id):
+def loadPageUntilID(id1, id2=None):
     global browser
     try:
-        element = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, id)))
-    except:
-        pass
+        (WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, id1))))
+        return id1
+    except TimeoutException:
+        try:
+            return (WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, id2))))
+            return id2
+        except:
+            browser.quit()
+            if(id2==None):
+                print("TIMEOUT while Looking for element id: " + id1)
+            else:
+                print("TIMEOUT while Looking for element id: " + id2)
+            exit()
+
+def addrCompare(prop1, prop2=None):
+    x1 = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop1)
+    x1 = re.split('\s+', x1.group())
+
+    if(prop2):
+        x2 = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop2)
+        x2 = re.split('\s+', x2.group())
+        # print(x1, end='\t')
+        # print(x2)
+        return x1 == x2
+    else:
+        return x1
+
         
+def leave():
+    global browser
+    browser.quit()
+    exit()
 
 def appSetup():
     global browser
@@ -32,12 +59,8 @@ def Search(house_num, st_name, st_type):
     # [Uncomment] This is a new feature
     browser.get("http://www2.county.allegheny.pa.us/RealEstate/Search.aspx")
 
-    # Remove any puncations and Uppercase the letters
-    st_name = st_name.translate(str.maketrans('', '', string.punctuation)).upper()
-    st_type = st_type.translate(str.maketrans('', '', string.punctuation)).upper()
-
     # Search for Property Address
-    loadPageUntilID("textStreetNum")
+    loadPageUntilID("txtStreetNum")
 
     HouseNum = browser.find_element_by_id("txtStreetNum")
     Street = browser.find_element_by_id("txtStreetName")
@@ -49,11 +72,19 @@ def Search(house_num, st_name, st_type):
     go.click()
 
     # Results are returned
-    # Check for proper results
+    # Check for multiple results
+    element = loadPageUntilID("dgSearchResults", "BasicInfo1_lblParcelID")
+    if(element == "dgSearchResults"):
+        address = house_num + " " + st_name + " " + st_type
+        rowCount = len(browser.find_elements_by_xpath("//table[@id='dgSearchResults']/tbody/tr"))
+        for rowNum in range(2,rowCount):
+            row = browser.find_elements_by_xpath("//table[@id='dgSearchResults']/tbody/tr[" + str(rowNum) +"]/td")
+            if(addrCompare(row[2].text, address)):
+                link = row[0].find_element_by_xpath("//table[@id='dgSearchResults']/tbody/tr[" + str(rowNum) +"]/td[1]/a")
+                link.click()
+                break
 
     # Results are good, then parse Results
-    loadPageUntilID("BasicInfo1_lblParcelID")
-
     parcelId = browser.find_element_by_id("BasicInfo1_lblParcelID").text
     owner = browser.find_element_by_id("BasicInfo1_lblOwner").text
 
@@ -94,7 +125,7 @@ def main():
     prop_writer = csv.writer(properties, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
 
-    browser = webdriver.Safari()
+    browser = webdriver.Chrome()
     appSetup()
 
 
@@ -104,7 +135,10 @@ def main():
         x = re.split('\s+', x.group())
         if(len(x) == 4):
             x = [x[0], x[1] + ' ' + x[2], x[3]]
-        property = Search(x[0],x[1], x[2])
+        # Remove any puncations and Uppercase the letters
+        st_name = x[1].translate(str.maketrans('', '', string.punctuation)).upper()
+        st_type = x[2].translate(str.maketrans('', '', string.punctuation)).upper()
+        property = Search(x[0],st_name, st_type)
         print(property)
 
 
