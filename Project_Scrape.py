@@ -81,90 +81,42 @@ def addrParser(st_type, addr):
     return city, state, zipcode
 
 
-def openFile(fileName):
-    global addresses
-
-    FileName = os.path.expanduser("~/Documents/" + fileName)
-
-    with open(FileName) as f:
-        lines = [line.rstrip('\n') for line in open(FileName)]
-
-    addresses = []
-
-    for items in lines:
-        lowercase = items.lower()
-        if "north" in lowercase:
-            newStr = lowercase.replace("north", "N")
-            addresses.append(newStr)
-        elif "south" in lowercase:
-            newStr = lowercase.replace("south", "S")
-            newStr = addresses.append(newStr)
-        elif "east" in lowercase:
-            newStr = lowercase.replace("east", "E")
-            newStr = addresses.append(newStr)
-        elif "west" in lowercase:
-            newStr = lowercase.replace("west", "W")
-            newStr = addresses.append(newStr)
-        else:
-            addresses.append(items)
-
-def listItems():
-    global addresses
-    global num
-    global st
-    global tpe
-
-    num = []
-    st = []
-    tpe = []
-
-    for items in addresses:
-        num.append(items.split(" ")[0])
-        st.append(items.split(" ")[1])
-        tpe.append(items.split(" ")[2])
-
 def main():
     global browser
-    global addresses
-    global num
-    global st
-    global tpe
 
     # system("ls -l")
 
     # leads = input("\nEnter the name of your leads file: ")
     # output = input("Name of output file: ")
 
-    browser = webdriver.Safari()
-
-    ## Leads Input File
-    # file = open(leads, 'r')
-    # muni = file.read()
-    # file.close()
-
-    ## Property Output File
+    props = open("Leads List 1")
     properties = open('test.csv', mode='w')
     prop_writer = csv.writer(properties, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
 
+    browser = webdriver.Safari()
     appSetup()
-    openFile("Properties.txt")
-    listItems()
 
-    if len(num) == len(st) and len(st) == len(tpe):
-        i = 0
-        for nums in num:
-            property = Search(nums, st[i], tpe[i])
-            prop_writer.writerow(property)
-            i += 1
 
-    # property = Search("6419", "Deary", "St")
-    # prop_writer.writerow(property)
-    # property = Search("1840", "Jancey", "st")
-    # prop_writer.writerow(property)
+    for prop in props:
+        x = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop)
+        print(x.group())
+        x = re.split('\s+', x.group())
+        if(len(x) == 4):
+            x = [x[0], x[1] + ' ' + x[2], x[3]]
+        property = Search(x[0],x[1], x[2])
+        print(property)
+
+
+    
+        # property = Search("6419", "Deary", "St")
+        # prop_writer.writerow(property)
+        # property = Search("1840", "Jancey", "st")
+        # prop_writer.writerow(property)
 
 
     # Close all the files that are open
+    props.close()
     properties.close()
     browser.quit()
 
