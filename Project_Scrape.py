@@ -65,6 +65,21 @@ def appSetup():
     Agree = browser.find_element_by_id("btnContinue")
     webdriver.ActionChains(browser).move_to_element(Agree).click(Agree).perform()
 
+def getMetaData():
+    global browser
+    building_info = browser.find_element_by_id("Header1_lnkBuilding")
+    building_info.click()
+
+    if (loadPageUntilID("lblResBedrooms") == -1):
+        return -1
+
+    beds = browser.find_element_by_id("lblResBedrooms").text
+    full_baths = browser.find_element_by_id("lblResFullBath").text
+    half_baths = browser.find_element_by_id("lblResHalfBath").text
+    sf = browser.find_element_by_id("lblResLiveArea").text
+    
+    return beds, full_baths, half_baths, sf
+
 def Search(house_num, st_name, st_type):
     global browser
     # [Uncomment] This is a new feature
@@ -115,8 +130,10 @@ def Search(house_num, st_name, st_type):
     addr = browser.find_element_by_id("BasicInfo1_lblAddress").text
     city, state, zipcode = addrParser(st_type, addr)
     address = house_num + " " + st_name + " " + st_type
+    mailing_address = browser.find_element_by_id("lblChangeMail").text
+    beds, full_bath, half_bath, sf = getMetaData()
 
-    return [address, city, state, zipcode, owner]
+    return [address, city, state, zipcode, beds, full_bath, half_bath, sf, owner, mailing_address]
 
 # Returns City, State, and ZipCode
 def addrParser(st_type, addr):
@@ -150,7 +167,7 @@ def main():
     props = open(in_file)
     properties = open(out_file, mode='w')
     prop_writer = csv.writer(properties, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
+    prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Bedrooms', 'Full bathrooms', 'Half Bathrooms', 'Square Footage', 'Name', 'Mailing Address'])
 
     browser = webdriver.Chrome()
     appSetup()
