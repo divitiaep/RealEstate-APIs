@@ -1,3 +1,16 @@
+# PROJECT SCRAPE
+#   Project Scrape is part of a larger goal of closing deals. 
+#   In Project Scrape we take a list a addresses and feed them
+#   through publics records to scrape property and owner information
+# 
+#   Copyright (C) Divitiae Properties, LLC - All Rights Reserved
+#   Unauthorized copying of this file, via any medium is strictly prohibited
+#   Proprietary and confidential
+#   Written by Malik Parker <divitiaep@gmail.com>, August 2019
+#   Written by Darius Davis <divitiaep@gmail.com>, August 2019
+# 
+import string, re, csv, os, argparse
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -5,11 +18,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.command import Command
 from selenium.common.exceptions import TimeoutException
 from os import system
-from time import sleep
-import string
-import re
-import csv
-import os
+
+
 
 def loadPageUntilID(id1, id2=None):
     global browser
@@ -21,12 +31,13 @@ def loadPageUntilID(id1, id2=None):
             return (WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, id2))))
             return id2
         except:
-            browser.quit()
-            if(id2==None):
-                print("TIMEOUT while Looking for element id: " + id1)
-            else:
-                print("TIMEOUT while Looking for element id: " + id2)
-            exit()
+            return -1
+            # browser.quit()
+            # if(id2==None):
+            #     print("TIMEOUT while Looking for element id: " + id1)
+            # else:
+            #     print("TIMEOUT while Looking for element id: " + id2)
+            # exit()
 
 def addrCompare(prop1, prop2=None):
     x1 = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop1)
@@ -52,7 +63,7 @@ def appSetup():
     browser.get("http://www2.county.allegheny.pa.us/RealEstate/Default.aspx")
     # loadPageUntilID("btnContinue")
     Agree = browser.find_element_by_id("btnContinue")
-    Agree.click()
+    webdriver.ActionChains(browser).move_to_element(Agree).click(Agree).perform()
 
 def Search(house_num, st_name, st_type):
     global browser
@@ -60,7 +71,8 @@ def Search(house_num, st_name, st_type):
     browser.get("http://www2.county.allegheny.pa.us/RealEstate/Search.aspx")
 
     # Search for Property Address
-    loadPageUntilID("txtStreetNum")
+    if(loadPageUntilID("txtStreetNum") == -1):
+        return -1
 
     HouseNum = browser.find_element_by_id("txtStreetNum")
     Street = browser.find_element_by_id("txtStreetName")
@@ -69,20 +81,31 @@ def Search(house_num, st_name, st_type):
     Street.send_keys(st_name)
     
     go = browser.find_element_by_id("btnSearch")
-    go.click()
+    webdriver.ActionChains(browser).move_to_element(go).click(go).perform()
 
     # Results are returned
     # Check for multiple results
-    element = loadPageUntilID("dgSearchResults", "BasicInfo1_lblParcelID")
+    element = loadPageUntilID("dgSearchResults", "Table1")
+    skip = 0
     if(element == "dgSearchResults"):
         address = house_num + " " + st_name + " " + st_type
         rowCount = len(browser.find_elements_by_xpath("//table[@id='dgSearchResults']/tbody/tr"))
         for rowNum in range(2,rowCount):
             row = browser.find_elements_by_xpath("//table[@id='dgSearchResults']/tbody/tr[" + str(rowNum) +"]/td")
             if(addrCompare(row[2].text, address)):
-                link = row[0].find_element_by_xpath("//table[@id='dgSearchResults']/tbody/tr[" + str(rowNum) +"]/td[1]/a")
-                link.click()
+                parcel = row[0].text.replace('-','')
+                link = "http://www2.county.allegheny.pa.us/RealEstate/GeneralInfo.aspx?ParcelID=" + parcel
+                browser.get(link)
+                if(loadPageUntilID("Table1") == -1):
+                    return -1
+                skip = 1
                 break
+        # Address Wasn't Found in Search Table
+        if(not skip):
+            return -1
+    elif(element == -1):
+        return -1
+
 
     # Results are good, then parse Results
     parcelId = browser.find_element_by_id("BasicInfo1_lblParcelID").text
@@ -99,7 +122,11 @@ def Search(house_num, st_name, st_type):
 def addrParser(st_type, addr):
     parts = re.findall(r"[\w']+", addr)
 
-    if(len(parts) == 6):
+    if(len(parts) == 7):
+        city = parts[3] + " " + parts[4]
+        state = parts[5]
+        zipcode = parts[6]
+    elif(len(parts) == 6):
         city = parts[3]
         state = parts[4]
         zipcode = parts[5]
@@ -114,14 +141,14 @@ def addrParser(st_type, addr):
 
 def main():
     global browser
+    parser = argparse.ArgumentParser(description="Retrieve Owners from a Leads List")
+    parser.add_argument('-f', action="store", help="Lead's List Input File")
+    x = vars(parser.parse_args())
+    in_file = (x['f'])
+    out_file = in_file + "_out.csv"
 
-    # system("ls -l")
-
-    # leads = input("\nEnter the name of your leads file: ")
-    # output = input("Name of output file: ")
-
-    props = open("Leads List 1")
-    properties = open('test.csv', mode='w')
+    props = open(in_file)
+    properties = open(out_file, mode='w')
     prop_writer = csv.writer(properties, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
 
@@ -130,19 +157,24 @@ def main():
 
 
     for prop in props:
-        x = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop)
-        print(x.group())
-        x = re.split('\s+', x.group())
+        addr = re.search("\d{1,5}\s+(\D\s+)?\w+\s+\w{2,4}", prop)
+        x = re.split('\s+', addr.group())
         if(len(x) == 4):
             x = [x[0], x[1] + ' ' + x[2], x[3]]
         # Remove any puncations and Uppercase the letters
         st_name = x[1].translate(str.maketrans('', '', string.punctuation)).upper()
         st_type = x[2].translate(str.maketrans('', '', string.punctuation)).upper()
+        # Testing Address
+            # x[0] = "124"
+            # st_name = "3RD"
+            # st_type = "AVE"
         property = Search(x[0],st_name, st_type)
-        print(property)
-
-
-    
+        if(property == -1):
+            print(addr.group() + " - Is an Invalid Address")
+        else:
+            print(property)
+            prop_writer.writerow(property)
+            pass
         # property = Search("6419", "Deary", "St")
         # prop_writer.writerow(property)
         # property = Search("1840", "Jancey", "st")
