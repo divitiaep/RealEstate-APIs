@@ -180,7 +180,7 @@ def main():
 
     # Setup the CSV output file
     prop_writer = csv.writer(csv_out, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Name'])
+    prop_writer.writerow(['Address', 'City', 'State', 'ZipCode', 'Bedrooms', 'Bathrooms', 'Half Bathrooms', 'Square Footage','Name', 'Mailing Address'])
 
     # Setup Browser Environment
     browser = webdriver.Chrome()
